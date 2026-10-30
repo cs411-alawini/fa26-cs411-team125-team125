@@ -271,3 +271,12 @@ Index 3:
 ![Row Count Results](screenshots/indexing/query3/Query3Index3.png)
 
 ### Final Indexing Design
+| Query | Baseline Cost | Final Cost | Reduction |
+|---|---:|---:|---:|
+| Query 1 | 2042 | 1476 | 27.7% |
+| Query 2 | 76.7 | 2.49 | 96.8% |
+| Query 3 | 87.9 | 47.5 | 46.0% |
+
+These costs represent specific operations that were reduced instead of complete query costs. Queries 1 and 3 compare estimated join costs whereas Query 2 compares the estimated look up costs. For Query 1 we seleceted Fare_Prices(airline_id, origin_airport, destination_airport, fare). This reduced the estimated join cost from 2042 down to 1476, a 27.7% reduction. 
+For Query 2 we selected Fare_Prices(origin_airport, destination_airport, airline_id, fare). This index reduced the estimated look up cost from 76.7 to 2.49 showing a 96.8% decrease. It improved the subquery lookup costs. 
+For Query 3 we selected Fare_Prices(origin_airport, destination_airport, search_date, departure_date, fare). This index reduced the join cost from 87.9 to 47.5 showing a 46% decrease. All three indexes were used when put together, confirming that they support different query operations. 
