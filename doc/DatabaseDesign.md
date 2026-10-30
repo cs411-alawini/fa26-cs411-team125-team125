@@ -264,10 +264,10 @@ We selected using Index Design 3 because it produced the lowest estimated join c
 Baseline Results: 
 ![Row Count Results](screenshots/indexing/query3/Query3Baseline.png)
 Index 1:
-![Row Count Results](doc/screenshots/indexing/query3/Query3Index1.png)
+![Row Count Results](screenshots/indexing/query3/Query3Index1.png)
 Index 2:
-![Row Count Results](doc/screenshots/indexing/query3/Query3Index2.png)
+![Row Count Results](screenshots/indexing/query3/Query3Index2.png)
 Index 3:
-![Row Count Results](doc/screenshots/indexing/query3/Query3Index3.png)
+![Row Count Results](screenshots/indexing/query3/Query3Index3.png)
 
 ### Final Indexing Design
