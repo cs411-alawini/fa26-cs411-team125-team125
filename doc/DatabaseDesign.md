@@ -102,16 +102,27 @@ CREATE TABLE Fare_Prices (
 );
 ```
 ### 2. Data Population
-We populated FareWise database with synthetic data to simular users, saved flight routes, and airlines far observations.
-
-To verify that at least three tables have 1000 rows we provided a screenshot of the table lengths. 
+We populated FareWise database with synthetic data to simulate users, saved flight routes, and airlines far observations.
+To verify that at least three tables have at least 1000 rows we provided a screenshot of the row counts for Users, Saved_Route, and Fare_Prices.
 ![Row Count Results](screenshots/RowLength.png)
 
 ### 3. Advanced SQL Queries
-
 #### Query 1: Airline Fare Comparison
+This query compares flight prices across differnt airlines and routes by calucalting the average fare, minimum fare, and total number of fare observations.
 
+```sql
+select f.origin_airport, f.destination_airport, a.airline_name, AVG(fare) as avg_price, MIN(fare) as min_price, COUNT(*) as total_flights
+from Fare_Prices f
+join Airlines a on a.airline_id = f.airline_id
+group by f.origin_airport, f.destination_airport, a.airline_id, a.airline_name
+having total_flights >= 5
+order by avg_price asc
+limit 15; 
+```
+![Row Count Results](screenshots/Query1Result.png)
 #### Query 2: Competing Airline Fare Comparison
+
+
 
 #### Query 3: Booking Window Analysis
 
