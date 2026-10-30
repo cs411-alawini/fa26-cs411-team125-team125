@@ -108,7 +108,7 @@ To verify that at least three tables have at least 1000 rows we provided a scree
 
 ### 3. Advanced SQL Queries
 #### Query 1: Airline Fare Comparison
-This query compares flight prices across differnt airlines and routes by calucalting the average fare, minimum fare, and total number of fare observations.
+This query compares flight prices across differnt airlines and routes by calucalting the average fare, minimum fare, and total number of fare observations. We only included observations with flight paths that had more than 5 observations. 
 
 ```sql
 select f.origin_airport, f.destination_airport, a.airline_name, AVG(fare) as avg_price, MIN(fare) as min_price, COUNT(*) as total_flights
@@ -121,10 +121,60 @@ limit 15;
 ```
 ![Row Count Results](screenshots/Query1Result.png)
 #### Query 2: Competing Airline Fare Comparison
+This query identifies fares that are cheaper than the average flgith offered by every competing airline on the same route. It also calculates overall average fare for that route and the potential savings that come with choosing that specific flight and route. 
 
-
-
+```sql
+select f.origin_airport, f.destination_airport, a.airline_name, f.fare, f.departure_date, 
+(
+    select AVG(f2.fare)
+    from Fare_Prices f2
+    where f2.origin_airport = f.origin_airport and f2.destination_airport = f.destination_airport
+) as avg_price,
+(
+    select AVG(f3.fare)
+    from Fare_Prices f3
+    where f3.origin_airport = f.origin_airport
+    and f3.destination_airport = f.destination_airport
+) - f.fare AS savings
+from Fare_Prices f
+join Airlines a on f.airline_id = a.airline_id
+where f.fare < ALL (
+    select AVG(f2.fare)
+    from Fare_Prices f2
+    where f2.origin_airport = f.origin_airport
+    and f2.destination_airport = f.destination_airport
+    and f2.airline_id != f.airline_id
+    group by f2.airline_id
+)
+order by f.fare asc
+limit 15; 
+```
+![Row Count Results](screenshots/Query2Result.png)
 #### Query 3: Booking Window Analysis
+This query compares average prices across diffrent booking windows for a specific route. In this example, we used JFK and LAX but can be changed for user preference in filter selection. It calculates the average fare and toal number of fare observation for each booking window to help determine which window period offers the best average price. 
+
+```sql
+select
+    f.origin_airport,
+    f.destination_airport,
+    b.label as booking_window,
+    AVG(f.fare) as avg_fare,
+    COUNT(*) as total_fares
+from Fare_Prices f
+join Booking_Window b on DATEDIFF(f.departure_date, f.search_date) between b.min_days and b.max_days
+where f.origin_airport = 'JFK' and f.destination_airport = 'LAX'
+group by
+    f.origin_airport,
+    f.destination_airport,
+    b.window_id,
+    b.label
+having count(*) >= 5
+order by avg_fare asc
+limit 15;
+```
+![Row Count Results](screenshots/Query3Result.png)
+
+Query 3 only retuens five rows beacuse our database defines five booking window categoires. Since the query filters for only a single route and each booking window group classified as, Medium, Early, Long term, Last minute, Short term, only have the best prices assiocited with that window. 
 
 ## Part 2: Indexing Analysis
 
