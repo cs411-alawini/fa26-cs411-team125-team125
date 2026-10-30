@@ -205,8 +205,34 @@ idx_q1_airline_covering(Index 3):
 ![Row Count Results](screenshots/indexing/query1/Query1Index3Test.png)
 
 ### Query 2: Indexing Experiments
-For Query 2, we tested three diffrent composite indexes to improve the performance of comparing flight prices against competing airlines average fares. Before adding any experimental indexes, the estimated cost for airline lookup cost was 76.7 with the default using destination_airport as the index. For the first indexing experiment, we created a composite index on Fare_Prices(origin_airport, destination_airport). The goal was to improve the efficiency of the correlated subqueries and search for fares that belonged to the same origin and destination. Before adding the index, MySQL used the existing ‘destination_airport’ index and examined around 451 rows per lookup. After adding the composite index, MySQL switched to ‘idx_q2_route’, reducing the average number of rows examined to approximately 22.8. The estimated cost of repeated comparison subquery lookup decreased from 76.7 to 5.13, representing around a 93.3% reduction. However, the top-level estimated query cost was still unchanged at 5934. This shows that the new index reduced the estimated cost of the correlated subquery’s lookup, while the overall optimizer cost estimate did not change.
+For Query 2, we tested three diffrent composite indexes to improve the performance of comparing flight prices against competing airlines average fares. Before adding any experimental indexes, the estimated cost for airline lookup cost was 76.7 with the default using destination_airport as the index. 
 
+For the first indexing experiment, we created a composite index on Fare_Prices(origin_airport, destination_airport). The goal was to improve the efficiency of the correlated subqueries and search for fares that belonged to the same origin and destination. Before adding the index it examined around 451 rows per lookup. After adding the composite index, MySQL switched to ‘idx_q2_route’, reducing the average number of rows examined to approximately 22.8. The estimated cost of repeated comparison subquery lookup decreased from 76.7 to 5.13, representing around a 93.3% reduction. This was shown by Index lookup on f2 using idx_q2_route
+(origin_airport=f.origin_airport, destination_airport=f.destination_airport)
+(cost=5.13 rows=15.1) (actual time=0.0194..0.0316 rows=22.8 loops=13200)
+However, the top-level estimated query cost was still unchanged at 5934. This shows that the new index reduced the estimated cost of the correlated subquery’s lookup, while the overall optimizer cost estimate did not change.
+
+For the second indexing experiment, we created a composite index on Fare_Prices(origin_airport, destination_airport, fare). This design extends the route index from Design 1 by including the fare attribute, which is used in the correlated subqueries to calculate average flight prices. Adding this index reduced the estimated lookup cost for the average-fare subqueries from 5.28 to 2.63, about a 50.2% reduction compared to Design 1. This was shown by the output "Covering index lookup on f2 using idx_q2_route_fare (cost=2.63 rows=15.1)". However, the comparison subquery’s estimated lookup cost remained at 5.13, because it also requires ‘airline_id’, not included in this index. The top-level estimated query cost remained unchanged at 5934. Overall, Index Design 2 improved the efficiency of the average-fare calculations, even though it didn’t reduce the top-level estimated cost.
+
+For the third indexing experiment, we created a composite index on Fare_Prices(origin_airport, destination_airport, airline_id, fare). This design includes all the attributes needed by the  subquery that compares fares against competing airlines average prices.After adding the index, the estimated cost of the competing-airline lookup decreased from 76.7 in the baseline to 2.49, representing a 96.8% reduction. This can be shown by the output "Covering index lookup on f2 using idx_q2_covering (cost=2.49 rows=15.1)" 
+
+In conclusion we selected Index Design 3 because it produced the lowest estimated competing airline cost. The index that covered all routes, allowed MySQL to get all required columns from the index itself without accessing full table rows. 
+| Configuration | Competing-Airline Lookup Cost | Improvement |
+|---|---:|---:|
+| Baseline | 76.7 | — |
+| Index Design 1 | 5.13 | 93.3% |
+| Index Design 2 | 5.13 | 93.3% |
+| Index Design 3 | 2.49 | 96.8% |
+
+
+Baseline Results: 
+![Row Count Results](screenshots/indexing/query2/Query2Baseline.png)
+idx_q1_route(Index 1):
+![Row Count Results](screenshots/indexing/query2/Query2Index1Test.png)
+idx_q1_route_airline(Index 2):
+![Row Count Results](screenshots/indexing/query2/Query2Index2Test.png)
+idx_q1_airline_covering(Index 3):
+![Row Count Results](screenshots/indexing/query2/Query2Index3Test.png)
 ### Query 3: Indexing Experiments
 
 ### Final Indexing Design
