@@ -180,11 +180,12 @@ Query 3 only retuens five rows beacuse our database defines five booking window 
 ### Query 1: Indexing Experiments
 We tested three composite indexes on Fare_Prices to improve the JOIN and GROUP BY operations. Before adding the experimental indexes the estimated nested loop join cost was 2042, with MySQL using the exisiting airline_id index. For Index Design 1 we created a composite key on Fare_Price(origin_airport, destination_airport) to test whether organizing fare records by route would improve query performance. The estimated joint cost remained at 2042, showing no improvement after adding this index. The ‘EXPLAIN ANALYZE’ output showed that the MySQL continued using the existing ‘airline_id’ index instead of the new composite index. This probably happened because the query processes fares across all routes rather than specifically filtering for a specific origin and destination. For Index Design 2 we created a composite index on ‘Fare_Prices(origin_airport, destination_airport, airline_id)’ for the second indexing experiment. We added ‘airline_id’ because it is used in both the JOIN and GROUP BY clauses, trying to see if including it would reduce the cost of grouping fares by route and airline. However, after running ‘EXPLAIN ANALYZE’, the estimated nested-loop join cost remained 2042, the same as both the baseline and the Index Design 1. This once again shows no improvement in the estimated join cost. For the third indexing experiment, we created a composite index on Fare_Prices(airline_id, origin_airport, destination_airport, fare). Unlike the other previous two designs, this index places airline_id first to support the JOIN condition which includes all the Fare_Prices attributes required by the query. After adding the index, the estimated nested-loop join cost decreased from 2042 to 1475, approximately a 27.8% reduction. This shows that MySQL used idx_q1_airline_covering through an index lookup. This improvement occurred because MySQL could find records by airline and retrieve the required route and fare information directly from the index without accessing the full table rows.
 
-Configuration      |      Join Cost     |        Improvement
-Baseline           |      2042          |         --
-Index Design 1     |      2042          |         0%
-Index Design 2     |      2042          |         0%
-Index Design 3     |      1475          |         0%
+| Configuration | Join Cost | Improvement |
+|---|---:|---:|
+| Baseline | 2042 | — |
+| Index Design 1 | 2042 | 0% |
+| Index Design 2 | 2042 | 0% |
+| Index Design 3 | 1475 | 27.8% |
 
 Baseline Results: 
 ![Row Count Results](screenshots/indexing/query1/Query1Baseline.png)
