@@ -197,22 +197,22 @@ This improvement occurred because MySQL could find records by airline and retrie
 
 Baseline Results: 
 ![Row Count Results](screenshots/indexing/query1/Query1Baseline.png)
-idx_q1_route(Index 1):
+Index 1:
 ![Row Count Results](screenshots/indexing/query1/Query1Index1Test.png)
-idx_q1_route_airline(Index 2):
+Index 2:
 ![Row Count Results](screenshots/indexing/query1/Query1Index2Test.png)
-idx_q1_airline_covering(Index 3):
+Index 3:
 ![Row Count Results](screenshots/indexing/query1/Query1Index3Test.png)
 
 ### Query 2: Indexing Experiments
 For Query 2, we tested three diffrent composite indexes to improve the performance of comparing flight prices against competing airlines average fares. Before adding any experimental indexes, the estimated cost for airline lookup cost was 76.7 with the default using destination_airport as the index. 
 
-For the first indexing experiment, we created a composite index on Fare_Prices(origin_airport, destination_airport). The goal was to improve the efficiency of the correlated subqueries and search for fares that belonged to the same origin and destination. Before adding the index it examined around 451 rows per lookup. After adding the composite index, MySQL switched to ‘idx_q2_route’, reducing the average number of rows examined to approximately 22.8. The estimated cost of repeated comparison subquery lookup decreased from 76.7 to 5.13, representing around a 93.3% reduction. This was shown by Index lookup on f2 using idx_q2_route
+For the first indexing experiment, we created a composite index on Fare_Prices(origin_airport, destination_airport). The goal was to improve the efficiency of the subqueries and search for fares that belonged to the same origin and destination. Before adding the index it examined around 451 rows per lookup. After adding the composite index, MySQL switched to ‘idx_q2_route’, reducing the average number of rows examined to approximately 22.8. The estimated cost of repeated comparison subquery lookup decreased from 76.7 to 5.13, representing around a 93.3% reduction. This was shown by Index lookup on f2 using idx_q2_route
 (origin_airport=f.origin_airport, destination_airport=f.destination_airport)
 (cost=5.13 rows=15.1) (actual time=0.0194..0.0316 rows=22.8 loops=13200)
-However, the top-level estimated query cost was still unchanged at 5934. This shows that the new index reduced the estimated cost of the correlated subquery’s lookup, while the overall optimizer cost estimate did not change.
+However, the top-level estimated query cost was still unchanged at 5934. This shows that the new index reduced the estimated cost of the subquery’s lookup, while the overall optimizer cost estimate did not change.
 
-For the second indexing experiment, we created a composite index on Fare_Prices(origin_airport, destination_airport, fare). This design extends the route index from Design 1 by including the fare attribute, which is used in the correlated subqueries to calculate average flight prices. Adding this index reduced the estimated lookup cost for the average-fare subqueries from 5.28 to 2.63, about a 50.2% reduction compared to Design 1. This was shown by the output "Covering index lookup on f2 using idx_q2_route_fare (cost=2.63 rows=15.1)". However, the comparison subquery’s estimated lookup cost remained at 5.13, because it also requires ‘airline_id’, not included in this index. The top-level estimated query cost remained unchanged at 5934. Overall, Index Design 2 improved the efficiency of the average-fare calculations, even though it didn’t reduce the top-level estimated cost.
+For the second indexing experiment, we created a composite index on Fare_Prices(origin_airport, destination_airport, fare). This design extends the route index from Design 1 by including the fare attribute, which is used in the subqueries to calculate average flight prices. Adding this index reduced the estimated lookup cost for the average-fare subqueries from 5.28 to 2.63, about a 50.2% reduction compared to Design 1. This was shown by the output "Covering index lookup on f2 using idx_q2_route_fare (cost=2.63 rows=15.1)". However, the comparison subquery’s estimated lookup cost remained at 5.13, because it also requires ‘airline_id’, not included in this index. The top-level estimated query cost remained unchanged at 5934. Overall, Index Design 2 improved the efficiency of the average-fare calculations, even though it didn’t reduce the top-level estimated cost.
 
 For the third indexing experiment, we created a composite index on Fare_Prices(origin_airport, destination_airport, airline_id, fare). This design includes all the attributes needed by the  subquery that compares fares against competing airlines average prices.After adding the index, the estimated cost of the competing-airline lookup decreased from 76.7 in the baseline to 2.49, representing a 96.8% reduction. This can be shown by the output "Covering index lookup on f2 using idx_q2_covering (cost=2.49 rows=15.1)" 
 
@@ -227,12 +227,47 @@ In conclusion we selected Index Design 3 because it produced the lowest estimate
 
 Baseline Results: 
 ![Row Count Results](screenshots/indexing/query2/Query2Baseline.png)
-idx_q1_route(Index 1):
+Index 1:
 ![Row Count Results](screenshots/indexing/query2/Query2Index1Test.png)
-idx_q1_route_airline(Index 2):
+Index 2:
 ![Row Count Results](screenshots/indexing/query2/Query2Index2Test.png)
-idx_q1_airline_covering(Index 3):
+Index 3:
 ![Row Count Results](screenshots/indexing/query2/Query2Index3Test.png)
+
 ### Query 3: Indexing Experiments
+
+For Query 3, we tested three diffrent indexes to improve performace. Before adding any experimental index, the estimated join cost was 87.9 with the baseline index using origin_aiport and destination_airport to find records. 
+
+
+For the first indexing experiment, we went with a composite index on Fare_Prices(origin_airport, destination_airport) to improve the retrieval of fares for a specific route, JFK to LAX.
+After adding the index, MySQL switched from using separate airport indexes with a hash join to using the composite index with a nested-loop join. This resulted in the estimated join cost increasing from 87.9 to 132, an approximately 50.2% increase. "Nested loop inner join (cost=132 rows=375)".
+
+Although the composite index was successfully used, it did not improve the estimated cost and instead actually increased it.
+
+
+For the second indexing experiment, we went with a composite index on Fare_Prices(origin_airport, destination_airport, fare). The goal was to improve route-specific fare retrieval while including the ‘fare’ attribute used to calculate average booking-window prices.
+
+The estimated joint cost decreased from 87.9 to 57.7, representing around a 34.4% reduction. "Inner hash join (no condition) (cost=57.7 rows=109)". However, the execution plan that MySQL continued using the existing ‘origin_airport’ and ‘destination_airport’ indexes rather than the new composite index. 
+
+For the third indexing experiment, we created a composite index on Fare_Prices(origin_airport, destination_airport, search_date, departure_date, fare). This index includes all the Fare_Prices attributes used in Query 3, allowing MySQL to retrieve route, date, and fare information directly from the index. After adding all the indexes, the estimated join cost decreased 87.9 to 47.5, representing a 46.0% reduction compared to the baseline. "Covering index lookup on f using idx_q3_covering (origin_airport='JFK' destination_airport='LAX') (cost=3.35 rows=75)" and "Nested loop inner join (cost=47.5 rows=375)."
+
+We selected using Index Design 3 because it produced the lowest estimated join cost and allowed MySQL to retrive all the required information direcrtly from the index provided. 
+
+| Configuration | Join Cost | Improvement |
+|---|---:|---:|
+| Baseline | 87.9 | — |
+| Index Design 1 | 132 | 50.2% increase |
+| Index Design 2 | 57.7 | 34.4% decrease |
+| Index Design 3 | 47.5 | 46.0% decrease |
+
+
+Baseline Results: 
+![Row Count Results](screenshots/indexing/query3/Query3Baseline.png)
+Index 1:
+![Row Count Results](screenshots/indexing/query3/Query3Index1Test.png)
+Index 2:
+![Row Count Results](screenshots/indexing/query3/Query3Index2Test.png)
+Index 3:
+![Row Count Results](screenshots/indexing/query3/Query3Index3Test.png)
 
 ### Final Indexing Design
