@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FareWise — when to book</title>
+  <meta name="description" content="Explore historical airfare by booking window and track routes you care about.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0f1c'/%3E%3Cpath d='M7 21 L25 9 L21 23 L16 18 Z' fill='%23ffb627'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800;900&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Martian+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <header class="topbar reveal" style="--d:0">
+    <a class="brand" href="#explore" aria-label="FareWise home">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <rect x="1" y="1" width="38" height="38" rx="9" />
+        <path d="M9 26 L31 11 L26 29 L19.5 23 Z" />
+        <path d="M19.5 23 L18 30" />
+      </svg>
+      <span class="brand-text">
+        <span class="brand-name">FareWise</span>
+        <span class="brand-tag">booking-window intelligence</span>
+      </span>
+    </a>
+
+    <nav class="tabs" aria-label="Main">
+      <a href="#explore" class="tab" data-view="explore">Explore</a>
+      <a href="#routes" class="tab" data-view="routes">My routes <span class="tab-count" id="routeCount">0</span></a>
+    </nav>
+
+    <div class="user-wrap">
+      <button class="user-chip" id="userChip" type="button" aria-haspopup="dialog" aria-expanded="false">
+        <span class="avatar" id="userAvatar">?</span>
+        <span class="user-meta">
+          <span class="user-name" id="userName">Loading…</span>
+          <span class="user-home" id="userHome">home —</span>
+        </span>
+        <svg viewBox="0 0 12 12" class="chev" aria-hidden="true"><path d="M2 4l4 4 4-4" /></svg>
+      </button>
+      <div class="user-pop" id="userPop" hidden>
+        <label class="pop-label" for="userSearch">Act as user</label>
+        <input id="userSearch" class="pop-input" placeholder="Search username" autocomplete="off">
+        <ul class="pop-list" id="userList"></ul>
+        <p class="pop-hint">Login comes later; for now pick any account from the Users table.</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="status-strip reveal" style="--d:1" id="statusStrip" role="status">
+    <span class="dot"></span><span id="statusText">Connecting to database…</span>
+  </div>
+
+  <main>
+    <!-- ============ EXPLORE ============ -->
+    <section class="view" id="view-explore" aria-labelledby="exploreTitle">
+      <div class="board reveal" style="--d:2">
+        <div class="board-head">
+          <h1 id="exploreTitle">Departures <em>· historical fares</em></h1>
+          <span class="board-clock" id="clock">--:--</span>
+        </div>
+
+        <div class="flap-row" aria-live="polite">
+          <div class="flap-stack">
+            <div class="flap-word" id="flapOrigin" aria-label="Origin"></div>
+            <div class="flap-city" id="originCity">—</div>
+          </div>
+          <div class="flight-path" aria-hidden="true">
+            <svg viewBox="0 0 300 70" preserveAspectRatio="none">
+              <path id="arc" d="M6 60 Q150 -18 294 60" />
+            </svg>
+            <svg class="plane" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>
+          </div>
+          <div class="flap-stack right">
+            <div class="flap-word" id="flapDest" aria-label="Destination"></div>
+            <div class="flap-city" id="destCity">—</div>
+          </div>
+        </div>
+
+        <form class="controls" id="controls" autocomplete="off">
+          <div class="field airport-field">
+            <label for="originInput">From</label>
+            <input id="originInput" class="airport-input" maxlength="40" placeholder="Code or city" spellcheck="false">
+            <ul class="suggest" id="originSuggest" role="listbox" hidden></ul>
+          </div>
+          <button type="button" class="swap" id="swapBtn" title="Swap origin and destination" aria-label="Swap origin and destination">
+            <svg viewBox="0 0 24 24"><path d="M7 7h12l-3-3M17 17H5l3 3" /></svg>
+          </button>
+          <div class="field airport-field">
+            <label for="destInput">To</label>
+            <input id="destInput" class="airport-input" maxlength="40" placeholder="Code or city" spellcheck="false">
+            <ul class="suggest" id="destSuggest" role="listbox" hidden></ul>
+          </div>
+          <div class="field">
+            <label for="airlineSelect">Airline</label>
+            <select id="airlineSelect"><option value="">Any airline</option></select>
+          </div>
+          <div class="field seg-field">
+            <span class="label">Departs</span>
+            <div class="seg" data-key="day" role="radiogroup" aria-label="Departure day">
+              <button type="button" data-value="any" class="on">Any</button>
+              <button type="button" data-value="weekday">Weekday</button>
+              <button type="button" data-value="weekend">Weekend</button>
+              <button type="button" data-value="holiday">Holiday</button>
+            </div>
+          </div>
+          <div class="field seg-field">
+            <span class="label">Stops</span>
+            <div class="seg" data-key="stops" role="radiogroup" aria-label="Stops">
+              <button type="button" data-value="any" class="on">Any</button>
+              <button type="button" data-value="nonstop">Nonstop</button>
+              <button type="button" data-value="connecting">Connecting</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="compare-row" id="compareRow">
+          <button type="button" class="compare-toggle" id="compareToggle" aria-expanded="false">
+            <span class="plus">+</span> Compare another set of filters
+          </button>
+          <div class="compare-controls" id="compareControls" hidden>
+            <span class="series-key b">B</span>
+            <select id="airlineSelectB" aria-label="Compare airline"><option value="">Any airline</option></select>
+            <div class="seg small" data-key="day" data-series="b" role="radiogroup" aria-label="Compare departure day">
+              <button type="button" data-value="any">Any</button>
+              <button type="button" data-value="weekday">Weekday</button>
+              <button type="button" data-value="weekend" class="on">Weekend</button>
+              <button type="button" data-value="holiday">Holiday</button>
+            </div>
+            <div class="seg small" data-key="stops" data-series="b" role="radiogroup" aria-label="Compare stops">
+              <button type="button" data-value="any" class="on">Any</button>
+              <button type="button" data-value="nonstop">Nonstop</button>
+              <button type="button" data-value="connecting">Connecting</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="popular">
+          <span class="popular-label">Most observed</span>
+          <div class="chips" id="popularChips"></div>
+        </div>
+      </div>
+
+      <div class="delayed" id="delayed" hidden>
+        <div class="delayed-flaps" aria-hidden="true"><span>D</span><span>E</span><span>L</span><span>A</span><span>Y</span><span>E</span><span>D</span></div>
+        <p id="delayedText">The database is unreachable.</p>
+        <button type="button" class="btn ghost" id="retryBtn">Try again</button>
+      </div>
+
+      <div class="results" id="results">
+        <article class="panel chart-panel reveal" style="--d:3">
+          <header class="panel-head">
+            <div>
+              <h2>Average fare by booking window</h2>
+              <p class="panel-sub" id="chartSub">How far ahead the fare was seen, from earliest to last minute</p>
+            </div>
+            <div class="legend" id="legend"></div>
+          </header>
+          <div class="chart" id="chart" role="img" aria-label="Bar chart of average fare per booking window"></div>
+          <div class="chart-axis-note"><span>Earlier</span><span class="axis-line"></span><span>Departure</span></div>
+        </article>
+
+        <aside class="panel insight-panel reveal" style="--d:4" id="insight" aria-live="polite">
+          <div class="stamp" id="stamp">
+            <span class="stamp-kicker">Book in</span>
+            <span class="stamp-window" id="stampWindow">—</span>
+            <span class="stamp-days" id="stampDays">&nbsp;</span>
+          </div>
+          <p class="saving" id="savingLine">&nbsp;</p>
+          <dl class="stats" id="stats"></dl>
+          <button type="button" class="btn primary wide" id="saveRouteBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z" /></svg>
+            Save route &amp; set a target
+          </button>
+        </aside>
+
+        <article class="panel airline-panel reveal" style="--d:5">
+          <header class="panel-head">
+            <div>
+              <h2>Airline leaderboard</h2>
+              <p class="panel-sub">Same route and filters, every airline. Click one to filter.</p>
+            </div>
+          </header>
+          <ol class="leaderboard" id="leaderboard"></ol>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ MY ROUTES ============ -->
+    <section class="view" id="view-routes" hidden aria-labelledby="routesTitle">
+      <div class="routes-head reveal" style="--d:2">
+        <div>
+          <h1 id="routesTitle">My boarding passes</h1>
+          <p class="panel-sub">Routes you track, with a recommendation computed live from historical fares.</p>
+        </div>
+        <div class="seg" id="archiveToggle" role="radiogroup" aria-label="Show">
+          <button type="button" data-value="0" class="on">Active</button>
+          <button type="button" data-value="1">Archived</button>
+        </div>
+      </div>
+      <div class="passes" id="passes"></div>
+    </section>
+  </main>
+
+  <!-- ============ SAVE / EDIT DIALOG ============ -->
+  <dialog class="pass-dialog" id="routeDialog" aria-labelledby="dialogTitle">
+    <form method="dialog" id="routeForm" class="pass-form" novalidate>
+      <div class="pass-form-main">
+        <div class="pf-head">
+          <span class="pf-kicker">FareWise · <span id="dialogMode">New route</span></span>
+          <h2 id="dialogTitle"><span id="dlgOrigin">---</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg><span id="dlgDest">---</span></h2>
+        </div>
+        <div class="pf-grid">
+          <div class="field airport-field">
+            <label for="fOrigin">From</label>
+            <input id="fOrigin" class="airport-input" required maxlength="40" spellcheck="false">
+            <ul class="suggest" id="fOriginSuggest" role="listbox" hidden></ul>
+          </div>
+          <div class="field airport-field">
+            <label for="fDest">To</label>
+            <input id="fDest" class="airport-input" required maxlength="40" spellcheck="false">
+            <ul class="suggest" id="fDestSuggest" role="listbox" hidden></ul>
+          </div>
+          <div class="field">
+            <label for="fAirline">Airline</label>
+            <select id="fAirline"><option value="">Any airline</option></select>
+          </div>
+          <div class="field">
+            <label for="fWindow">Plan to book in</label>
+            <select id="fWindow"><option value="">Not decided</option></select>
+          </div>
+          <div class="field">
+            <label for="fDay">Departs</label>
+            <select id="fDay">
+              <option value="any">Any day</option><option value="weekday">Weekday</option>
+              <option value="weekend">Weekend</option><option value="holiday">Holiday</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fStops">Stops</label>
+            <select id="fStops">
+              <option value="any">Any</option><option value="nonstop">Nonstop</option><option value="connecting">Connecting</option>
+            </select>
+          </div>
+          <div class="field span2">
+            <label for="fNote">Note <span class="optional">optional</span></label>
+            <textarea id="fNote" maxlength="255" rows="2" placeholder="e.g. Thanksgiving with family"></textarea>
+          </div>
+        </div>
+        <p class="form-error" id="formError" role="alert"></p>
+      </div>
+      <div class="pass-form-stub">
+        <label for="fTarget" class="stub-label">Target price</label>
+        <div class="money"><span>$</span><input id="fTarget" type="number" min="1" step="1" required inputmode="decimal"></div>
+        <p class="stub-hint" id="targetHint">&nbsp;</p>
+        <div class="stub-actions">
+          <button type="submit" class="btn primary" id="dialogSubmit">Save pass</button>
+          <button type="button" class="btn ghost dark" id="dialogCancel">Cancel</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
