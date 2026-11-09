@@ -36,7 +36,7 @@
       <button class="user-chip" id="userChip" type="button" aria-haspopup="dialog" aria-expanded="false">
         <span class="avatar" id="userAvatar">?</span>
         <span class="user-meta">
-          <span class="user-name" id="userName">Loading…</span>
+          <span class="user-name" id="userName">Preview</span>
           <span class="user-home" id="userHome">home —</span>
         </span>
         <svg viewBox="0 0 12 12" class="chev" aria-hidden="true"><path d="M2 4l4 4 4-4" /></svg>
@@ -51,7 +51,7 @@
   </header>
 
   <div class="status-strip reveal" style="--d:1" id="statusStrip" role="status">
-    <span class="dot"></span><span id="statusText">Connecting to database…</span>
+    <span class="dot"></span><span id="statusText">UI preview · Backend not connected</span>
   </div>
 
   <main>
@@ -83,7 +83,7 @@
         <form class="controls" id="controls" autocomplete="off">
           <div class="field airport-field">
             <label for="originInput">From</label>
-            <input id="originInput" class="airport-input" maxlength="40" placeholder="Code or city" spellcheck="false">
+            <input id="originInput" class="airport-input" maxlength="10" placeholder="Airport code, e.g. EWR" spellcheck="false" required>
             <ul class="suggest" id="originSuggest" role="listbox" hidden></ul>
           </div>
           <button type="button" class="swap" id="swapBtn" title="Swap origin and destination" aria-label="Swap origin and destination">
@@ -91,7 +91,7 @@
           </button>
           <div class="field airport-field">
             <label for="destInput">To</label>
-            <input id="destInput" class="airport-input" maxlength="40" placeholder="Code or city" spellcheck="false">
+            <input id="destInput" class="airport-input" maxlength="10" placeholder="Airport code, e.g. LAX" spellcheck="false" required>
             <ul class="suggest" id="destSuggest" role="listbox" hidden></ul>
           </div>
           <div class="field">
@@ -139,6 +139,7 @@
         </div>
 
         <div class="popular">
+          <button type="submit" form="controls" class="btn primary" id="searchFlightsBtn">Search flights</button>
           <span class="popular-label">Most observed</span>
           <div class="chips" id="popularChips"></div>
         </div>
@@ -149,6 +150,22 @@
         <p id="delayedText">The database is unreachable.</p>
         <button type="button" class="btn ghost" id="retryBtn">Try again</button>
       </div>
+
+      <article class="panel flight-results" aria-labelledby="flightsTitle">
+        <header class="panel-head">
+          <div>
+            <h2 id="flightsTitle">Flight search</h2>
+            <p class="panel-sub" id="flightStatus" role="status">Enter two airport codes to search historical fares. Up to 20 results, cheapest first.</p>
+          </div>
+        </header>
+        <div class="flight-table-wrap" id="flightTableWrap" hidden>
+          <table class="flight-table">
+            <caption class="panel-sub">Historical fare records from Cloud SQL</caption>
+            <thead><tr><th>From</th><th>To</th><th>Airline</th><th>Departure</th><th>Fare</th><th>Stops</th><th>Duration</th></tr></thead>
+            <tbody id="flightRows"></tbody>
+          </table>
+        </div>
+      </article>
 
       <div class="results" id="results">
         <article class="panel chart-panel reveal" style="--d:3">

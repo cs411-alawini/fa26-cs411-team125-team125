@@ -1,9 +1,10 @@
 """A local API that retrieves five airports from Cloud SQL."""
 
-from getpass import getpass
 import os
+from pathlib import Path
 
-from flask import Flask, jsonify
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import pymysql
 
@@ -16,9 +17,13 @@ def create_app(username, password):
     ).split(",")
     CORS(app, resources={r"/api/*": {"origins": [origin.strip() for origin in origins]}})
 
-    @app.get("/api/airports")
-    def airports():
-        connection = None
+    @app.get("/api/flights")
+    def getFlights():
+        origin = request.args.get("origin", "").strip().upper()
+        destination = request.args.get("destination", "").strip().upper()
+        if not origin or not destination: 
+            return jsonify(error = "Origin and destination are required"), 400
+        connection = None 
         try:
             connection = pymysql.connect(
                 host="127.0.0.1",
@@ -30,26 +35,34 @@ def create_app(username, password):
                 connect_timeout=10,
                 read_timeout=15,
             )
+
             with connection.cursor() as cursor:
-                # The existing schema spells this column "aiport_name".
                 cursor.execute(
-                    "SELECT airport_code, aiport_name AS airport_name, city, country "
-                    "FROM Airports ORDER BY airport_code LIMIT 5"
+                """
+                select f.fare_id,f.origin_airport,f.destination_airport,a.airline_name,f.departure_date, f.fare,f.num_stops,f.duration_min
+                from Fare_Prices f 
+                Join Airlines a on a.airline_id = f.airline_id
+                Where f.origin_airport = %s and f.destination_airport = %s
+                order by f.fare ASC, f.fare_id ASC
+                limit 20
+                """, 
+                (origin, destination)
                 )
                 return jsonify(cursor.fetchall())
         except pymysql.MySQLError:
-            app.logger.error("Airport query failed; check the proxy and database credentials.")
-            return jsonify(error="Could not retrieve airports. Check the backend terminal."), 503
+            app.logger.error("Flight query failed")
+            return jsonify(error="Could not retrieve flights"), 503
         finally:
-            if connection is not None:
+            if connection is not None: 
                 connection.close()
-
     return app
 
 
 if __name__ == "__main__":
-    username = input("Database username [Anish]: ").strip() or "Anish"
-    password = getpass("Database password: ")
+    load_dotenv(Path(__file__).parent / ".env")
+    username = os.environ.get("DB_USER")
+    password = os.environ.get("DB_PASSWORD")
+    if not username or not password:
+        raise SystemExit("Set DB_USER and DB_PASSWORD in backend/.env before starting Flask.")
     app = create_app(username, password)
-    # No reloader: credentials are entered once and stay only in memory.
     app.run(host="127.0.0.1", port=5001, debug=False)

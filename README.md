@@ -1,7 +1,27 @@
-# fa26-cs411-team125-team125
+# Start FareWise
 
-FareWise: explore historical airfare by booking window.
+Run these commands in three separate terminals, starting from the repository root.
+Make sure `backend/.env` contains your database credentials.
 
-- `doc/` design documents (proposal, Stage 2, Stage 3)
-- `sql/` Stage 3 advanced queries
-- `app/` Stage 4 web app. See [app/README.md](app/README.md) to run it.
+## 1. Start the Cloud SQL proxy
+
+```bash
+/private/tmp/farewise-cloud-tools/cloud-sql-proxy \
+  --port 3307 \
+  'project-f1c5e4ab-48d1-4f90-a76:us-east1:free-trial-first-project'
+```
+
+## 2. Start the Python backend
+
+```bash
+/private/tmp/farewise-cloud-tools/venv/bin/python backend/app.py
+```
+
+## 3. Start the frontend
+
+```bash
+cd app
+npm start
+```
+
+Open http://localhost:3000. Keep all three terminals running.

@@ -2,20 +2,13 @@
   "name": "farewise",
   "version": "0.1.0",
   "private": true,
-  "description": "FareWise: explore historical airfare by booking window (CS 411 Team 125)",
-  "main": "server/index.js",
+  "description": "FareWise frontend UI preview (Python backend developed separately)",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node --watch server/index.js",
-    "db:check": "node server/check-db.js",
-    "seed:local": "node db/seed-local.js"
+    "start": "python3 -m http.server 3000 --bind 127.0.0.1 --directory public",
+    "dev": "npm start"
   },
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "mysql2": "^3.11.5"
-  }
+  "dependencies": {}
 }
